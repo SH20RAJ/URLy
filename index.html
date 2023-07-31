@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>URLy - Link Shortener</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+  <div class="container mt-5">
+    <h1>URLy - Link Shortener</h1>
+    <form id="shortenForm" class="mt-3">
+      <div class="input-group">
+        <input type="text" id="urlInput" class="form-control" placeholder="Enter your URL here" required>
+        <div class="input-group-append">
+          <button type="submit" class="btn btn-primary">Shorten URL</button>
+        </div>
+      </div>
+    </form>
+    <div id="shortenedURLContainer" class="mt-3" style="display: none;">
+      <h2>Shortened URL:</h2>
+      <div class="input-group">
+        <input type="text" id="shortenedURL" class="form-control" readonly>
+        <div class="input-group-append">
+          <button id="copyButton" class="btn btn-secondary">Copy</button>
+        </div>
+      </div>
+    </div>
+    <div class="mt-5">
+      <h2>Saved Shortened URLs:</h2>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Shortened URL</th>
+            <th>Full URL</th>
+            <th>Date Time</th>
+            <th>Copy</th>
+          </tr>
+        </thead>
+        <tbody id="savedLinksBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer class="text-center mt-5">
+    <p>&copy; 2023 URLy - Link Shortener. All rights reserved. <a href="https://codexdindia.blogspot.com/tools" rel="dofollow" target="_blank">CXDIIN</a></p>
+  </footer>
+
+  <!-- Bootstrap JS and jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+  <script>
+    const API_KEY = '2259516283a549eea99744549057302f';
+    const API_URL = 'https://api.rebrandly.com/v1/links';
+
+       // Check if local storage is available in the browser
+    const isLocalStorageSupported = typeof Storage !== 'undefined';
+
+    // Function to display saved links from local storage
+    function displaySavedLinks() {
+      const savedLinks = JSON.parse(localStorage.getItem('shortenedLinks')) || [];
+      const savedLinksBody = document.getElementById('savedLinksBody');
+      savedLinksBody.innerHTML = '';
+
+      savedLinks.forEach((linkInfo) => {
+        if (true) {
+          const newRow = document.createElement('tr');
+
+          const shortUrlCell = document.createElement('td');
+          const fullUrlCell = document.createElement('td');
+          const dateTimeCell = document.createElement('td');
+          const copyCell = document.createElement('td');
+
+          const shortUrlNode = document.createTextNode(linkInfo.shortUrl);
+          const fullUrlNode = document.createTextNode(linkInfo.fullUrl);
+          const dateTimeNode = document.createTextNode(linkInfo.dateTime);
+
+          const copyButton = document.createElement('button');
+          copyButton.className = 'btn btn-secondary';
+          copyButton.textContent = 'Copy';
+          copyButton.addEventListener('click', () => {
+            copyToClipboard(linkInfo.shortUrl);
+          });
+          console.log(shortUrlNode);
+          shortUrlCell.appendChild(shortUrlNode);
+          fullUrlCell.appendChild(fullUrlNode);
+          dateTimeCell.appendChild(dateTimeNode);
+          copyCell.appendChild(copyButton);
+
+          newRow.appendChild(shortUrlCell);
+          newRow.appendChild(fullUrlCell);
+          newRow.appendChild(dateTimeCell);
+          newRow.appendChild(copyCell);
+
+          savedLinksBody.appendChild(newRow);
+        }
+      });
+    }
+
+    // Display saved links on page load
+    window.addEventListener('load', () => {
+      displaySavedLinks();
+    });
+
+
+    document.getElementById('shortenForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      const inputElement = document.getElementById('urlInput');
+      const urlToShorten = inputElement.value;
+
+      shortenURL(urlToShorten)
+        .then((shortenedURL) => {
+          const shortenedURLContainer = document.getElementById('shortenedURLContainer');
+          const shortenedURLElement = document.getElementById('shortenedURL');
+          const copyButton = document.getElementById('copyButton');
+
+          shortenedURLElement.value = shortenedURL.shortUrl;
+          shortenedURLContainer.style.display = 'block';
+
+          if (isLocalStorageSupported) {
+            // Save the shortened link info in local storage
+            const savedLinks = JSON.parse(localStorage.getItem('shortenedLinks')) || [];
+            savedLinks.push({
+              shortUrl: shortenedURL.shortUrl,
+              fullUrl: urlToShorten,
+              dateTime: new Date().toLocaleString(),
+            });
+            localStorage.setItem('shortenedLinks', JSON.stringify(savedLinks));
+
+            // Display updated saved links
+            displaySavedLinks();
+          }
+
+          // Enable the copy button
+          copyButton.disabled = false;
+        })
+        .catch((error) => {
+          console.error('Error shortening URL:', error);
+        });
+    });
+
+    function copyToClipboard(text) {
+      const tempElement = document.createElement('textarea');
+      tempElement.value = text;
+      document.body.appendChild(tempElement);
+      tempElement.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempElement);
+      alert('Copied to clipboard!');
+    }
+
+    async function shortenURL(url) {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': API_KEY,
+        },
+        body: JSON.stringify({
+          destination: url,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to shorten URL');
+      }
+
+      return response.json();
+    }
+  </script>
+</body>
+</html>
